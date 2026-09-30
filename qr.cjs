@@ -1,0 +1,12 @@
+/* Self-contained QR Model 2, version 5-L, byte mode, mask 0.
+   108 data + 26 Reed-Solomon codewords, 106 UTF-8 byte URL capacity. */
+'use strict';
+function matrix(text){const data=[...Buffer.from(text,'utf8')];if(data.length>106)throw Error('QR URL exceeds 106 bytes');const bits=[];const put=(v,n)=>{for(let i=n-1;i>=0;i--)bits.push((v>>>i)&1);};put(4,4);put(data.length,8);data.forEach(b=>put(b,8));put(0,Math.min(4,864-bits.length));while(bits.length%8)bits.push(0);const bytes=[];for(let i=0;i<bits.length;i+=8)bytes.push(bits.slice(i,i+8).reduce((a,b)=>a*2+b,0));for(let i=0;bytes.length<108;i++)bytes.push(i%2?0x11:0xec);
+const mul=(a,b)=>{let r=0;while(b){if(b&1)r^=a;b>>>=1;a<<=1;if(a&256)a^=0x11d;}return r;};let gen=[1],power=1;for(let n=0;n<26;n++){const next=Array(gen.length+1).fill(0);gen.forEach((v,i)=>{next[i]^=v;next[i+1]^=mul(v,power);});gen=next;power=mul(power,2);}const ecc=Array(26).fill(0);for(const b of bytes){const f=b^ecc[0];ecc.shift();ecc.push(0);for(let j=0;j<26;j++)ecc[j]^=mul(gen[j+1],f);}const stream=[];for(const b of [...bytes,...ecc])for(let i=7;i>=0;i--)stream.push((b>>>i)&1);
+const n=37,m=Array.from({length:n},()=>Array(n).fill(false)),fn=Array.from({length:n},()=>Array(n).fill(false));const set=(x,y,b)=>{if(x>=0&&x<n&&y>=0&&y<n){m[y][x]=!!b;fn[y][x]=true;}};
+for(const [cx,cy]of [[3,3],[n-4,3],[3,n-4]])for(let y=-4;y<=4;y++)for(let x=-4;x<=4;x++){const d=Math.max(Math.abs(x),Math.abs(y));set(cx+x,cy+y,d!==2&&d!==4);}
+for(let i=8;i<n-8;i++){set(6,i,i%2===0);set(i,6,i%2===0);}for(let y=-2;y<=2;y++)for(let x=-2;x<=2;x++)set(30+x,30+y,Math.max(Math.abs(x),Math.abs(y))!==1);
+const format=0x77c4,bit=i=>((format>>>i)&1)!==0;for(let i=0;i<=5;i++)set(8,i,bit(i));set(8,7,bit(6));set(8,8,bit(7));set(7,8,bit(8));for(let i=9;i<15;i++)set(14-i,8,bit(i));for(let i=0;i<8;i++)set(n-1-i,8,bit(i));for(let i=8;i<15;i++)set(8,n-15+i,bit(i));set(8,n-8,true);
+let k=0;for(let right=n-1;right>=1;right-=2){if(right===6)right=5;for(let v=0;v<n;v++){const y=((right+1)&2)===0?n-1-v:v;for(let j=0;j<2;j++){const x=right-j;if(!fn[y][x])m[y][x]=Boolean((stream[k++]||0)^((x+y)%2===0?1:0));}}}return m;}
+function svg(text){const m=matrix(text),q=4,n=m.length+2*q;let path='';m.forEach((row,y)=>row.forEach((b,x)=>{if(b)path+=`M${x+q},${y+q}h1v1h-1z`;}));return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><rect width="${n}" height="${n}" fill="white"/><path d="${path}" fill="black"/></svg>`;}
+module.exports={matrix,svg};

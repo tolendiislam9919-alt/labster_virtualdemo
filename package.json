@@ -1,0 +1,12 @@
+{
+  "name": "elektr-lab-coop",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Kazakh first-person 3D electrical laboratory for two players",
+  "scripts": {
+    "start": "node server.cjs",
+    "build": "node build.cjs",
+    "test": "node --test tests/server.test.cjs"
+  },
+  "engines": {"node": ">=18"}
+}
